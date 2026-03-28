@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WashQueue – Çamaşır Randevu</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0d0f14; --surface:#151820; --surface2:#1c2030; --border:#2a2f42;
+  --accent:#4f7fff; --accent2:#7c3aed; --success:#22c55e; --danger:#ef4444;
+  --warn:#f59e0b; --text:#e8eaf0; --muted:#6b7280;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;top:-200px;left:-200px;width:600px;height:600px;
+  background:radial-gradient(circle,rgba(79,127,255,0.06) 0%,transparent 70%);pointer-events:none;z-index:0;}
+
+/* NAV */
+nav{display:flex;align-items:center;justify-content:space-between;padding:14px 28px;
+  border-bottom:1px solid var(--border);background:rgba(13,15,20,0.92);
+  backdrop-filter:blur(14px);position:sticky;top:0;z-index:100;}
+.logo{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;display:flex;align-items:center;gap:9px;}
+.logo-icon{width:30px;height:30px;background:linear-gradient(135deg,var(--accent),var(--accent2));
+  border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;}
+.nav-right{display:flex;align-items:center;gap:8px;font-size:0.83rem;color:var(--muted);}
+.nav-right strong{color:var(--text);}
+.btn-sm{background:transparent;border:1px solid var(--border);color:var(--muted);
+  padding:5px 12px;border-radius:7px;cursor:pointer;font-size:0.78rem;transition:all .2s;font-family:inherit;}
+.btn-sm.back:hover{border-color:var(--accent);color:var(--accent);}
+.btn-sm.out:hover{border-color:var(--danger);color:var(--danger);}
+
+/* PAGES */
+.page{display:none;}.page.active{display:block;}
+
+/* AUTH */
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 16px;position:relative;z-index:1;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  width:100%;max-width:400px;padding:36px;box-shadow:0 20px 60px rgba(0,0,0,0.45);}
+.auth-logo{font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;display:flex;align-items:center;gap:8px;margin-bottom:22px;}
+.auth-title{font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:700;margin-bottom:4px;}
+.auth-sub{color:var(--muted);font-size:0.83rem;margin-bottom:24px;}
+.tabs{display:flex;margin-bottom:24px;background:var(--surface2);border-radius:9px;padding:3px;}
+.tab-btn{flex:1;padding:7px;border:none;background:transparent;color:var(--muted);
+  font-size:0.83rem;font-weight:500;border-radius:7px;cursor:pointer;transition:all .2s;font-family:inherit;}
+.tab-btn.active{background:var(--accent);color:#fff;}
+.fg{margin-bottom:14px;}
+label{display:block;font-size:0.75rem;color:var(--muted);margin-bottom:5px;font-weight:500;letter-spacing:.3px;}
+input[type=text],input[type=password]{width:100%;padding:10px 13px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:0.88rem;
+  font-family:inherit;outline:none;transition:border-color .2s,box-shadow .2s;}
+input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(79,127,255,0.14);}
+.btn-primary{width:100%;padding:11px;background:linear-gradient(135deg,var(--accent),#3b65e8);
+  border:none;border-radius:9px;color:#fff;font-size:0.88rem;font-weight:600;
+  cursor:pointer;margin-top:4px;transition:opacity .2s,transform .1s;font-family:inherit;}
+.btn-primary:hover{opacity:.9;}.btn-primary:active{transform:scale(.99);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;}
+.msg{font-size:0.78rem;margin-top:10px;padding:9px 11px;border-radius:7px;display:none;}
+.msg.error{background:rgba(239,68,68,.1);color:#fc8686;border:1px solid rgba(239,68,68,.2);display:block;}
+.msg.success{background:rgba(34,197,94,.1);color:#6ee7a0;border:1px solid rgba(34,197,94,.2);display:block;}
+
+/* APP WRAP */
+.app-wrap{max-width:1160px;margin:0 auto;padding:30px 22px;position:relative;z-index:1;}
+
+/* MACHINE TYPE TABS */
+.type-tabs{display:flex;gap:0;margin-bottom:26px;background:var(--surface2);border-radius:11px;padding:4px;width:fit-content;}
+.type-tab{padding:8px 22px;border:none;background:transparent;color:var(--muted);
+  font-size:0.88rem;font-weight:600;border-radius:8px;cursor:pointer;transition:all .2s;
+  font-family:'Syne',sans-serif;display:flex;align-items:center;gap:7px;}
+.type-tab.active{background:var(--accent);color:#fff;}
+
+.sec-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:700;}
+.sec-desc{color:var(--muted);font-size:0.82rem;margin-top:3px;margin-bottom:20px;}
+
+/* MACHINES GRID */
+.machines-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:36px;}
+.machine-card{background:var(--surface);border:2px solid var(--border);border-radius:13px;
+  padding:16px 14px;cursor:pointer;transition:all .22s;position:relative;overflow:hidden;}
+.machine-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 6px 24px rgba(79,127,255,0.12);}
+.machine-icon{font-size:1.4rem;margin-bottom:8px;}
+.machine-num{font-family:'Syne',sans-serif;font-weight:700;font-size:0.92rem;}
+.machine-avail{font-size:0.72rem;margin-top:3px;}
+.c-green{color:var(--success);}.c-red{color:var(--danger);}
+.mbadge{position:absolute;top:10px;right:10px;padding:2px 7px;border-radius:20px;font-size:0.65rem;font-weight:700;}
+.mb-a{background:rgba(34,197,94,.15);color:var(--success);}
+.mb-b{background:rgba(239,68,68,.15);color:var(--danger);}
+
+/* SLOTS */
+.slots-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+.sel-info{display:flex;align-items:center;gap:9px;}
+.sel-icon{font-size:1.3rem;}
+.sel-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;}
+.sel-sub{font-size:0.72rem;color:var(--muted);}
+.date-nav{display:flex;align-items:center;gap:10px;}
+.date-nav button{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:6px 13px;border-radius:7px;cursor:pointer;font-size:0.82rem;transition:all .2s;font-family:inherit;}
+.date-nav button:hover{border-color:var(--accent);color:var(--accent);}
+.date-label{font-size:0.85rem;font-weight:500;min-width:155px;text-align:center;}
+
+.slots-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:9px;}
+.slot{border-radius:11px;padding:12px 9px;text-align:center;cursor:pointer;
+  border:1.5px solid var(--border);background:var(--surface);transition:all .2s;}
+.slot-time{font-family:'Syne',sans-serif;font-size:0.95rem;font-weight:700;}
+.slot-user{font-size:0.68rem;margin-top:3px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 4px;}
+.slot-status{font-size:0.67rem;margin-top:2px;}
+
+.slot.free:hover{border-color:var(--accent);background:rgba(79,127,255,.06);}
+.slot.free .slot-status{color:var(--success);}
+.slot.mine{border-color:var(--success);background:rgba(34,197,94,.08);}
+.slot.mine .slot-user{color:var(--success);}.slot.mine .slot-status{color:var(--success);}
+.slot.other{border-color:var(--border);background:var(--surface2);cursor:not-allowed;opacity:.65;}
+.slot.other .slot-user{color:var(--muted);}.slot.other .slot-status{color:var(--muted);}
+.slot.warn{border-color:var(--warn)!important;background:rgba(245,158,11,.07)!important;}
+.slot.warn .slot-user{color:var(--warn);}.slot.warn .slot-status{color:var(--warn);}
+.slot.past{border-color:var(--border);background:var(--surface2);cursor:not-allowed;opacity:.28;}
+.slot.past .slot-status{color:var(--muted);}
+
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(5px);
+  z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;
+  padding:28px;max-width:340px;width:92%;box-shadow:0 20px 60px rgba(0,0,0,.5);}
+.modal-title{font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:7px;}
+.modal-desc{color:var(--muted);font-size:0.83rem;margin-bottom:22px;line-height:1.65;}
+.modal-actions{display:flex;gap:9px;}
+.btn-ok{flex:1;padding:10px;background:linear-gradient(135deg,var(--accent),#3b65e8);border:none;
+  border-radius:9px;color:#fff;font-size:0.83rem;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .2s;}
+.btn-ok:hover{opacity:.9;}
+.btn-no{flex:1;padding:10px;background:transparent;border:1px solid var(--border);color:var(--muted);
+  font-size:0.83rem;cursor:pointer;border-radius:9px;font-family:inherit;transition:all .2s;}
+.btn-no:hover{border-color:var(--accent);color:var(--accent);}
+.btn-del{flex:1;padding:10px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  color:#fc8686;font-size:0.83rem;cursor:pointer;border-radius:9px;font-family:inherit;transition:all .2s;}
+.btn-del:hover{background:rgba(239,68,68,.2);}
+
+/* RESERVATIONS */
+.res-list{display:flex;flex-direction:column;gap:9px;margin-top:14px;}
+.res-item{background:var(--surface);border:1px solid var(--border);border-radius:11px;
+  padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;}
+.res-dot{width:7px;height:7px;border-radius:50%;background:var(--success);flex-shrink:0;}
+.res-machine{font-weight:600;font-size:0.86rem;}
+.res-time{color:var(--muted);font-size:0.78rem;margin-top:2px;}
+.btn-del-res{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);color:#fc8686;
+  padding:5px 12px;border-radius:7px;cursor:pointer;font-size:0.76rem;transition:all .2s;font-family:inherit;}
+.btn-del-res:hover{background:rgba(239,68,68,.2);}
+.empty{color:var(--muted);font-size:0.83rem;padding:18px;text-align:center;background:var(--surface2);border-radius:10px;}
+
+/* LOADER */
+.loader{position:fixed;inset:0;background:var(--bg);display:flex;flex-direction:column;
+  align-items:center;justify-content:center;z-index:999;gap:14px;}
+.spin{width:32px;height:32px;border:3px solid var(--border);border-top-color:var(--accent);
+  border-radius:50%;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.loader-text{color:var(--muted);font-size:0.83rem;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:11px 20px;font-size:0.82rem;z-index:300;transition:transform .3s;white-space:nowrap;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+.toast.t-ok{border-color:rgba(34,197,94,.4);color:var(--success);}
+.toast.t-err{border-color:rgba(239,68,68,.4);color:#fc8686;}
+
+.divider{height:1px;background:var(--border);margin:32px 0;}
+
+@media(max-width:600px){nav{padding:12px 16px;}.app-wrap{padding:20px 14px;}.auth-card{padding:26px 20px;}}
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader"><div class="spin"></div><div class="loader-text">Bağlanıyor...</div></div>
+<div class="toast" id="toast"></div>
+
+<!-- AUTH -->
+<div id="authPage" class="page">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="logo-icon">🫧</div><span>WashQueue</span></div>
+      <div class="auth-title">Hoş Geldiniz</div>
+      <p class="auth-sub">Site sakinlerine özel çamaşır randevu sistemi</p>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('login')">Giriş Yap</button>
+        <button class="tab-btn" onclick="switchTab('register')">Kayıt Ol</button>
+      </div>
+      <div id="loginForm">
+        <div class="fg"><label>AD SOYAD</label><input type="text" id="loginName" placeholder="Ad Soyad"></div>
+        <div class="fg"><label>ŞİFRE</label><input type="password" id="loginPass" placeholder="••••••••"></div>
+        <button class="btn-primary" id="loginBtn" onclick="login()">Giriş Yap</button>
+        <div id="loginMsg" class="msg"></div>
+      </div>
+      <div id="registerForm" style="display:none">
+        <div class="fg"><label>AD SOYAD</label><input type="text" id="regName" placeholder="Ad Soyad"></div>
+        <div class="fg"><label>ŞİFRE</label><input type="password" id="regPass" placeholder="En az 4 karakter"></div>
+        <div class="fg"><label>ŞİFRE TEKRAR</label><input type="password" id="regPass2" placeholder="Şifrenizi tekrar girin"></div>
+        <button class="btn-primary" id="regBtn" onclick="register()">Hesap Oluştur</button>
+        <div id="registerMsg" class="msg"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MACHINES PAGE -->
+<div id="machinesPage" class="page">
+  <nav>
+    <div class="logo"><div class="logo-icon">🫧</div><span>WashQueue</span></div>
+    <div class="nav-right">
+      <span>Merhaba, <strong id="navName"></strong></span>
+      <button class="btn-sm out" onclick="logout()">Çıkış</button>
+    </div>
+  </nav>
+  <div class="app-wrap">
+    <div class="type-tabs">
+      <button class="type-tab active" id="tabWash" onclick="switchType('wash')">🫧 Çamaşır Makineleri</button>
+      <button class="type-tab" id="tabDry" onclick="switchType('dry')">🌀 Kurutma Makineleri</button>
+    </div>
+    <div class="sec-title" id="machSectionTitle">Çamaşır Makineleri</div>
+    <div class="sec-desc">Randevu almak istediğiniz makineyi seçin</div>
+    <div class="machines-grid" id="machinesGrid"></div>
+    <div class="divider"></div>
+    <div class="sec-title">Rezervasyonlarım</div>
+    <div class="sec-desc">Tüm aktif randevularınız</div>
+    <div class="res-list" id="resList"></div>
+  </div>
+</div>
+
+<!-- SLOTS PAGE -->
+<div id="slotsPage" class="page">
+  <nav>
+    <div class="logo"><div class="logo-icon">🫧</div><span>WashQueue</span></div>
+    <div class="nav-right">
+      <span><strong id="slotsNavName"></strong></span>
+      <button class="btn-sm back" onclick="goBack()">← Geri</button>
+      <button class="btn-sm out" onclick="logout()">Çıkış</button>
+    </div>
+  </nav>
+  <div class="app-wrap">
+    <div class="slots-header">
+      <div class="sel-info">
+        <div class="sel-icon" id="selIcon"></div>
+        <div>
+          <div class="sel-name" id="selName"></div>
+          <div class="sel-sub">Saat seçin</div>
+        </div>
+      </div>
+      <div class="date-nav">
+        <button onclick="changeDate(-1)">← Önceki</button>
+        <div class="date-label" id="dateLabel"></div>
+        <button onclick="changeDate(1)">Sonraki →</button>
+      </div>
+    </div>
+    <div class="slots-grid" id="slotsGrid"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-title" id="mTitle"></div>
+    <div class="modal-desc" id="mDesc"></div>
+    <div class="modal-actions" id="mActions"></div>
+  </div>
+</div>
+
+<script>
+// ─── SUPABASE CONFIG ──────────────────────────────────────────
+const SUPA_URL = 'https://bvoddlojpqdhdrusfxme.supabase.co';
+const SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ2b2RkbG9qcHFkaGRydXNmeG1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ2ODQ1OTUsImV4cCI6MjA5MDI2MDU5NX0.KZtl6MU2LVrEh29HUQMTD1jK4LgQcwEAOpJuzdd9j9M';
+
+const supa = {
+  async req(method, path, body) {
+    const r = await fetch(SUPA_URL + '/rest/v1/' + path, {
+      method,
+      headers: {
+        'apikey': SUPA_KEY,
+        'Authorization': 'Bearer ' + SUPA_KEY,
+        'Content-Type': 'application/json',
+        'Prefer': method === 'POST' ? 'return=representation' : ''
+      },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    if (!r.ok) { const e = await r.json().catch(()=>({message:r.statusText})); throw new Error(e.message||r.statusText); }
+    return r.status === 204 ? null : r.json();
+  },
+  get: (path) => supa.req('GET', path),
+  post: (path, body) => supa.req('POST', path, body),
+  del: (path) => supa.req('DELETE', path),
+};
+
+// Realtime via Supabase Realtime WebSocket
+let realtimeWs = null;
+function connectRealtime() {
+  if (realtimeWs) return;
+  const wsUrl = SUPA_URL.replace('https','wss') + '/realtime/v1/websocket?apikey=' + SUPA_KEY + '&vsn=1.0.0';
+  realtimeWs = new WebSocket(wsUrl);
+  realtimeWs.onopen = () => {
+    realtimeWs.send(JSON.stringify({topic:'realtime:public:bookings',event:'phx_join',payload:{},ref:'1'}));
+  };
+  realtimeWs.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.event === 'phx_reply' || msg.event === 'heartbeat') return;
+    if (!user) return;
+    // Refresh on any booking change
+    if (document.getElementById('slotsPage').classList.contains('active')) renderSlots();
+    if (document.getElementById('machinesPage').classList.contains('active')) { renderMachines(); renderMyRes(); }
+  };
+  realtimeWs.onclose = () => { realtimeWs = null; setTimeout(connectRealtime, 3000); };
+  // Heartbeat
+  setInterval(() => { if (realtimeWs?.readyState === 1) realtimeWs.send(JSON.stringify({topic:'phoenix',event:'heartbeat',payload:{},ref:'hb'})); }, 25000);
+}
+
+// ─── MACHINES ─────────────────────────────────────────────────
+const WASH = Array.from({length:10},(_,i)=>({id:i+1,name:`Çamaşır ${i+1}`,type:'wash',icon:'🫧'}));
+const DRY  = Array.from({length:10},(_,i)=>({id:i+11,name:`Kurutma ${i+1}`,type:'dry',icon:'🌀'}));
+const ALL_MACHINES = [...WASH, ...DRY];
+const HOURS = Array.from({length:16},(_,i)=>i+7); // 07–22
+
+// ─── STATE ────────────────────────────────────────────────────
+let user = null, machine = null, curDate = new Date(), activeType = 'wash';
+let bookingsCache = [];
+
+// ─── SESSION (localStorage) ───────────────────────────────────
+const getSession = () => { try{return JSON.parse(localStorage.getItem('wq_sess')||'null')}catch{return null} };
+const saveSession = s => localStorage.setItem('wq_sess', JSON.stringify(s));
+const clearSess   = () => localStorage.removeItem('wq_sess');
+
+// ─── HELPERS ──────────────────────────────────────────────────
+const norm = n => n.trim().toLowerCase().replace(/\s+/g,' ');
+const dStr = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const toTitle = s => s.trim().replace(/\b\w/g,c=>c.toLocaleUpperCase('tr-TR'));
+const pad = n => String(n).padStart(2,'0');
+
+function fmtDate(d){
+  const days=['Pazar','Pazartesi','Salı','Çarşamba','Perşembe','Cuma','Cumartesi'];
+  const months=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const today=new Date(); today.setHours(0,0,0,0);
+  const cd=new Date(d); cd.setHours(0,0,0,0);
+  const diff=Math.round((cd-today)/86400000);
+  return (diff===0?'Bugün • ':diff===1?'Yarın • ':'')+days[d.getDay()]+' '+d.getDate()+' '+months[d.getMonth()];
+}
+function showPage(id){ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+function setLoader(v,txt){ const l=document.getElementById('loader'); l.style.display=v?'flex':'none'; if(txt) l.querySelector('.loader-text').textContent=txt; }
+function showMsg(id,txt,type){ const e=document.getElementById(id); e.textContent=txt; e.className='msg '+type; }
+
+let toastTimer;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=(type==='ok'?'✓ ':'✕ ')+msg;
+  el.className='toast t-'+type+' show';
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>el.classList.remove('show'),2800);
+}
+
+// ─── AUTH ─────────────────────────────────────────────────────
+function switchTab(tab){
+  document.getElementById('loginForm').style.display=tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display=tab==='register'?'block':'none';
+  document.querySelectorAll('.tab-btn').forEach((b,i)=>b.classList.toggle('active',tab==='login'?i===0:i===1));
+}
+
+async function login(){
+  const name=document.getElementById('loginName').value.trim();
+  const pass=document.getElementById('loginPass').value;
+  if(!name||!pass) return showMsg('loginMsg','Lütfen tüm alanları doldurun.','error');
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true; btn.textContent='Giriş yapılıyor...';
+  try {
+    const rows = await supa.get(`users?name_key=eq.${encodeURIComponent(norm(name))}&select=*`);
+    if(!rows.length || rows[0].password!==pass){
+      showMsg('loginMsg','Ad soyad veya şifre hatalı.','error');
+    } else {
+      user={name:rows[0].name,key:rows[0].name_key};
+      saveSession(user);
+      await openMachines();
+    }
+  } catch(e){ showMsg('loginMsg','Bağlantı hatası: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Giriş Yap';
+}
+
+async function register(){
+  const name=document.getElementById('regName').value.trim();
+  const pass=document.getElementById('regPass').value;
+  const pass2=document.getElementById('regPass2').value;
+  if(!name||!pass||!pass2) return showMsg('registerMsg','Lütfen tüm alanları doldurun.','error');
+  if(pass.length<4) return showMsg('registerMsg','Şifre en az 4 karakter olmalı.','error');
+  if(pass!==pass2) return showMsg('registerMsg','Şifreler eşleşmiyor.','error');
+  const btn=document.getElementById('regBtn');
+  btn.disabled=true; btn.textContent='Kayıt yapılıyor...';
+  try {
+    const key=norm(name);
+    const existing=await supa.get(`users?name_key=eq.${encodeURIComponent(key)}&select=id`);
+    if(existing.length){ showMsg('registerMsg','Bu isimle zaten kayıt var.','error'); btn.disabled=false; btn.textContent='Hesap Oluştur'; return; }
+    await supa.post('users',{name:toTitle(name),name_key:key,password:pass});
+    showMsg('registerMsg','Kayıt başarılı! Giriş yapabilirsiniz.','success');
+    document.getElementById('loginName').value=name;
+    setTimeout(()=>switchTab('login'),1000);
+  } catch(e){ showMsg('registerMsg','Hata: '+e.message,'error'); }
+  btn.disabled=false; btn.textContent='Hesap Oluştur';
+}
+
+function logout(){ clearSess(); user=null; machine=null; bookingsCache=[]; showPage('authPage'); }
+function goBack(){ machine=null; renderMachines(); renderMyRes(); showPage('machinesPage'); }
+
+// ─── MACHINES PAGE ────────────────────────────────────────────
+async function openMachines(){
+  document.getElementById('navName').textContent=user.name;
+  setLoader(true,'Yükleniyor...');
+  await refreshBookings();
+  setLoader(false);
+  renderMachines(); renderMyRes();
+  showPage('machinesPage');
+  connectRealtime();
+}
+
+async function refreshBookings(){
+  try {
+    const today=dStr(new Date());
+    // Fetch bookings from today onwards
+    bookingsCache=await supa.get(`bookings?date=gte.${today}&select=*`);
+  } catch(e){ console.error('Bookings fetch error',e); }
+}
+
+function switchType(type){
+  activeType=type;
+  document.getElementById('tabWash').classList.toggle('active',type==='wash');
+  document.getElementById('tabDry').classList.toggle('active',type==='dry');
+  document.getElementById('machSectionTitle').textContent=type==='wash'?'Çamaşır Makineleri':'Kurutma Makineleri';
+  renderMachines();
+}
+
+function renderMachines(){
+  const machines=activeType==='wash'?WASH:DRY;
+  const now=new Date(), ts=dStr(now);
+  document.getElementById('machinesGrid').innerHTML=machines.map(m=>{
+    const busy=bookingsCache.filter(b=>b.machine_id===m.id&&b.date===ts).length;
+    const avail=HOURS.length-busy;
+    return `<div class="machine-card" onclick="selectMachine(${m.id})">
+      <span class="mbadge ${avail>0?'mb-a':'mb-b'}">${avail>0?'Müsait':'Dolu'}</span>
+      <div class="machine-icon">${m.icon}</div>
+      <div class="machine-num">${m.name}</div>
+      <div class="machine-avail ${avail>0?'c-green':'c-red'}">Bugün ${avail} boş</div>
+    </div>`;
+  }).join('');
+}
+
+async function selectMachine(id){
+  machine=ALL_MACHINES.find(m=>m.id===id);
+  curDate=new Date();
+  document.getElementById('selIcon').textContent=machine.icon;
+  document.getElementById('selName').textContent=machine.name;
+  document.getElementById('slotsNavName').textContent=user.name;
+  setLoader(true,'Saatler yükleniyor...');
+  await refreshBookings();
+  setLoader(false);
+  renderSlots();
+  showPage('slotsPage');
+}
+
+// ─── SLOTS ────────────────────────────────────────────────────
+function changeDate(d){
+  const nd=new Date(curDate); nd.setDate(nd.getDate()+d);
+  const today=new Date(); today.setHours(0,0,0,0);
+  if(nd<today) return;
+  curDate=nd; renderSlots();
+}
+
+function renderSlots(){
+  document.getElementById('dateLabel').textContent=fmtDate(curDate);
+  const ds=dStr(curDate), now=new Date();
+  document.getElementById('slotsGrid').innerHTML=HOURS.map(h=>{
+    const booking=bookingsCache.find(b=>b.machine_id===machine.id&&b.date===ds&&b.hour===h);
+    const slotStart=new Date(curDate); slotStart.setHours(h,0,0,0);
+    const slotEnd=new Date(curDate); slotEnd.setHours(h+1,0,0,0);
+    const timeLabel=pad(h)+':00';
+
+    if(slotEnd<=now){
+      return `<div class="slot past"><div class="slot-time">${timeLabel}</div><div class="slot-status">Geçmiş</div></div>`;
+    }
+    const isRunning=slotStart<=now&&now<slotEnd;
+    const msLeft=slotEnd-now;
+    const endingSoon=isRunning&&msLeft<=15*60*1000;
+
+    if(!booking){
+      return `<div class="slot free" onclick="openBook(${h})">
+        <div class="slot-time">${timeLabel}</div>
+        <div class="slot-status">${endingSoon?`⚡ ${Math.ceil(msLeft/60000)} dk`:'Boş'}</div>
+      </div>`;
+    }
+    const isMe=booking.user_key===user.key;
+    const cls=endingSoon?'warn':isMe?'mine':'other';
+    const onclick=isMe&&!endingSoon?`onclick="openCancel(${h})"`:endingSoon?'':endingSoon?'':'';
+    const statusTxt=endingSoon?`⏰ ${Math.ceil(msLeft/60000)} dk kaldı`:isMe?'✓ Benim':'Dolu';
+    return `<div class="slot ${cls}" ${isMe&&!endingSoon?`onclick="openCancel(${h})"`:''}>
+      <div class="slot-time">${timeLabel}</div>
+      <div class="slot-user">${booking.user_name}</div>
+      <div class="slot-status">${statusTxt}</div>
+    </div>`;
+  }).join('');
+}
+
+// ─── MODAL ────────────────────────────────────────────────────
+function showModal(title,desc,actions){
+  document.getElementById('mTitle').textContent=title;
+  document.getElementById('mDesc').innerHTML=desc;
+  document.getElementById('mActions').innerHTML=actions;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+const closeModal=()=>document.getElementById('modalOverlay').classList.remove('open');
+
+function openBook(h){
+  const t=`${pad(h)}:00 – ${pad(h+1)}:00`;
+  showModal('Randevu Al',
+    `<strong>${machine.name}</strong> için<br><strong>${fmtDate(curDate)}</strong>, ${t}<br>randevu almak istiyor musunuz?`,
+    `<button class="btn-ok" onclick="bookSlot(${h})">Onayla</button><button class="btn-no" onclick="closeModal()">Vazgeç</button>`);
+}
+function openCancel(h){
+  const t=`${pad(h)}:00 – ${pad(h+1)}:00`;
+  showModal('Randevuyu İptal Et',
+    `<strong>${machine.name}</strong><br>${t} randevunuzu iptal etmek istiyor musunuz?`,
+    `<button class="btn-del" onclick="cancelSlot(${h})">İptal Et</button><button class="btn-no" onclick="closeModal()">Kapat</button>`);
+}
+
+async function bookSlot(h){
+  closeModal();
+  // Optimistic check
+  const existing=bookingsCache.find(b=>b.machine_id===machine.id&&b.date===dStr(curDate)&&b.hour===h);
+  if(existing){ toast('Bu saat zaten dolu!','err'); renderSlots(); return; }
+  try {
+    await supa.post('bookings',{
+      machine_id:machine.id, machine_name:machine.name, machine_type:machine.type,
+      date:dStr(curDate), hour:h, user_key:user.key, user_name:user.name
+    });
+    toast('Randevu alındı!','ok');
+    await refreshBookings(); renderSlots();
+    if(document.getElementById('machinesPage').classList.contains('active')) renderMachines();
+  } catch(e){
+    if(e.message.includes('unique')) toast('Bu saat az önce doldu!','err');
+    else toast('Hata: '+e.message,'err');
+    await refreshBookings(); renderSlots();
+  }
+}
+
+async function cancelSlot(h){
+  closeModal();
+  try {
+    await supa.del(`bookings?machine_id=eq.${machine.id}&date=eq.${dStr(curDate)}&hour=eq.${h}&user_key=eq.${encodeURIComponent(user.key)}`);
+    toast('Randevu iptal edildi.','ok');
+    await refreshBookings(); renderSlots();
+  } catch(e){ toast('Hata: '+e.message,'err'); }
+}
+
+async function cancelRes(mid,date,hour){
+  try {
+    await supa.del(`bookings?machine_id=eq.${mid}&date=eq.${date}&hour=eq.${hour}&user_key=eq.${encodeURIComponent(user.key)}`);
+    toast('Randevu iptal edildi.','ok');
+    await refreshBookings(); renderMyRes(); renderMachines();
+  } catch(e){ toast('Hata: '+e.message,'err'); }
+}
+
+// ─── MY RESERVATIONS ──────────────────────────────────────────
+function renderMyRes(){
+  const now=new Date();
+  const months=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const mine=bookingsCache.filter(b=>{
+    if(b.user_key!==user.key) return false;
+    const end=new Date(b.date); end.setHours(b.hour+1,0,0,0); return end>now;
+  }).sort((a,b2)=>a.date.localeCompare(b2.date)||a.hour-b2.hour);
+
+  const list=document.getElementById('resList');
+  if(!mine.length){list.innerHTML='<div class="empty">Aktif rezervasyonunuz bulunmuyor.</div>';return;}
+  list.innerHTML=mine.map(b=>{
+    const d=new Date(b.date+'T00:00:00');
+    const icon=ALL_MACHINES.find(x=>x.id===b.machine_id)?.icon||'';
+    return `<div class="res-item">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="res-dot"></div>
+        <div>
+          <div class="res-machine">${icon} ${b.machine_name}</div>
+          <div class="res-time">${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()} • ${pad(b.hour)}:00 – ${pad(b.hour+1)}:00</div>
+        </div>
+      </div>
+      <button class="btn-del-res" onclick="cancelRes(${b.machine_id},'${b.date}',${b.hour})">İptal Et</button>
+    </div>`;
+  }).join('');
+}
+
+// ─── AUTO REFRESH (fallback for realtime) ─────────────────────
+setInterval(async()=>{
+  if(!user) return;
+  await refreshBookings();
+  if(document.getElementById('slotsPage').classList.contains('active')) renderSlots();
+  if(document.getElementById('machinesPage').classList.contains('active')){ renderMachines(); renderMyRes(); }
+},20000);
+
+// ─── INIT ─────────────────────────────────────────────────────
+window.addEventListener('load', async()=>{
+  const s=getSession();
+  if(s){
+    user=s;
+    try { await openMachines(); } catch(e){ clearSess(); setLoader(false); showPage('authPage'); }
+  } else { setLoader(false); showPage('authPage'); }
+});
+
+document.getElementById('modalOverlay').addEventListener('click',function(e){ if(e.target===this)closeModal(); });
+document.addEventListener('keydown',e=>{
+  if(e.key!=='Enter') return;
+  if(document.getElementById('authPage').classList.contains('active')){
+    if(document.getElementById('loginForm').style.display!=='none') login(); else register();
+  }
+});
+</script>
+</body>
+</html>
